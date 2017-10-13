@@ -1,4 +1,4 @@
-#Mock API - CLI
+# Mock API - CLI
 
 This project was inspired by Mockoon, which is a really cool project.
 Check it out here: <https://mockoon.com>
@@ -10,7 +10,7 @@ Run it from command line with:
 
 mockapi-cli --server \[servername] \[options]
 
-###Options:
+### Options:
 -a \[start/stop/restart/port] : action
 
 -n : new server
@@ -23,7 +23,7 @@ mockapi-cli --server \[servername] \[options]
 
 -l \[post/get/all/name]: list endpoints
 
-###Details:
+### Details:
 
 start : starts the server specified
 
@@ -45,7 +45,7 @@ name : this is the name of the endpoint
 
 vi/nano : specify the editor to use
 
-###Sample Usage:
+### Sample Usage:
 To create a sever:
 
 	mockapi-cli --server demo -n
