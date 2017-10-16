@@ -10,12 +10,15 @@ be cool to create a open source cli version.
 
 Please note: This requires using rust nightly compiler.
 If you are not using rust nightly run:
+
 	> rustup default nightly
 
 To build this project run:
+
 	> cargo build
 
 Then from /target/debug run:
+
 	>./mockapi-cli ...
 
 Run it from command line with:
