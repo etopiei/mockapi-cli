@@ -6,7 +6,7 @@ Check it out here: <https://mockoon.com>
 However this project was a closed source electron app, so I thought it would
 be cool to create a open source cli version.
 
-###Building
+### Building
 
 Please note: This requires using rust nightly compiler.
 If you are not using rust nightly run:
