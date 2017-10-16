@@ -7,12 +7,12 @@ mockapi-cli.
 
 Usage:
   mockapi-cli <servername> ...
-  mockapi-cli <servername> (-a | --action) <action>
+  mockapi-cli <servername> [(-a | --action)] <action>
   mockapi-cli <servername> (-p | --port) <portNumber>
-  mockapi-cli <servername> (-n | --new) <portNumber>
-  mockapi-cli <servername> (-c | --create) <type> <name> (-f | --file) <filename>
+  mockapi-cli <servername> (-n | --new) [<portNumber>]
+  mockapi-cli <servername> (-c | --create) <type> <name> [((-f | --file) <filename>)]
   mockapi-cli <servername> (-d | --delete) <name>
-  mockapi-cli <servername> (-e | --edit) <name> --editor <editorName>
+  mockapi-cli <servername> (-e | --edit) <name> [(--editor <editorName>)]
   mockapi-cli <servername> (-l | --list) <listType>
   mockapi-cli <servername> (-h | --help)
 
