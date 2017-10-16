@@ -6,12 +6,23 @@ Check it out here: <https://mockoon.com>
 However this project was a closed source electron app, so I thought it would
 be cool to create a open source cli version.
 
-Run it from command line with:
+###Building
 
-mockapi-cli --server \[servername] \[options]
+Please note: This requires using rust nightly compiler.
+If you are not using rust nightly run:
+	> rustup default nightly
+
+To build this project run:
+	> cargo build
+
+Then from /target/debug run:
+	>./mockapi-cli ...
+
+Run it from command line with:
+mockapi-cli \[servername] \[options]
 
 ### Options:
--a \[start/stop/restart/port] : action
+-a/--action \[start/stop/restart/port] : action
 
 -n : new server
 
@@ -48,16 +59,20 @@ vi/nano : specify the editor to use
 ### Sample Usage:
 To create a sever:
 
-	mockapi-cli --server demo -n
+	mockapi-cli demo -n
 
 Then add new data:
 
-	mockapi-cli --server demo -c get --file demo.json --name data
-	mockapi-cli --server demo -e data --editor vi
+	mockapi-cli demo -c get demoData --f demo.json
+	mockapi-cli demo -c get demoText
+
+Edit the data:
+
+	mockapi-cli demo -e demoText --editor vi
 
 Then start the server:
 
-	mockapi-cli --server demo -a start
+	mockapi-cli demo -a start
 
 Then it can be queried by:
 
