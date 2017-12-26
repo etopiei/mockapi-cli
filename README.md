@@ -6,81 +6,46 @@ Check it out here: <https://mockoon.com>
 However this project was a closed source electron app, so I thought it would
 be cool to create a open source cli version.
 
+This app is perfect for hackathons or quickly creating a local testing environment for frontend development. It allows you to thoroughly test that the code will integrate with the backend all from your local workspace.
+
 ### Building
-
-Please note: This requires using rust nightly compiler.
-If you are not using rust nightly run:
-
-	> rustup default nightly
 
 To build this project run:
 
-	> cargo build
+	$ cargo build
 
 Then from /target/debug run:
 
-	>./mockapi-cli ...
+	$ ./mockapi-cli ...
 
 Run it from command line with:
-mockapi-cli \[servername] \[options]
+	$ mockapi-cli <servername> \[subcommand]
 
-### Options:
--a/--action \[start/stop/restart/port] : action
+Or for help run:
 
--n : new server
+	$ mockapi-cli help
 
--c \[post/get] --file\[file/text] --name\[filename] (only if file specified) \[name] : create a new request response for the mock-api
+### Sub-Commands:
 
--d \[name] : delete a request response
-
--e \[name] --editor\[vi/nano] : edit a request response
-
--l \[post/get/all/name]: list endpoints
-
-### Details:
-
-start : starts the server specified
-
-stop : stops the specified server
-
-resart : restarts the specified server
-
-port : this specifies the port to use (default is 3080)
-
-post : specifies a post response
-
-get : speciifes a get response
-
-file : specifies the response should be a file
-
-text : specifies the response should be text
-
-name : this is the name of the endpoint
-
-vi/nano : specify the editor to use
 
 ### Sample Usage:
 To create a sever:
 
-	mockapi-cli demo -n
+	mockapi-cli demo create
 
 Then add new data:
 
-	mockapi-cli demo -c get demoData --f demo.json
-	mockapi-cli demo -c get demoText
+	mockapi-cli demo new testResponse --type=GET
+	mockapi-cli demo new testResponse2 --type=POST
 
 Edit the data:
 
-	mockapi-cli demo -e demoText --editor vi
+	mockapi-cli demo edit testResponse2 --editor=vi
 
 Then start the server:
 
-	mockapi-cli demo -a start
+	mockapi-cli demo start --port=8000
 
-Then it can be queried by:
-
-	curl localhost:port/data
-
-Or more generally through the endpoint:
+Then it can be queried through the following:
 
  	localhost:port/[name]
