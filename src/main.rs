@@ -55,5 +55,21 @@ fn main() {
 
         let servername = matches.value_of("servername").unwrap();
         println!("Using server: {}", servername);
+
+        if matches.is_present("start") {
+            println!("Starting server");
+        } else if matches.is_present("stop") {
+            println!("Stopping server");
+        } else if matches.is_present("restart") {
+            println!("Restarting server");
+        } else if matches.is_present("delete") {
+            println!("Deleting Response");
+        } else if matches.is_present("create") {
+            println!("Creating server");
+        } else if matches.is_present("new") {
+            println!("New response")
+        } else if matches.is_present("edit") {
+            println!("Editing file");
+        }
     
 }
