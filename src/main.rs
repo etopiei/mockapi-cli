@@ -1,6 +1,12 @@
 extern crate clap;
 use clap::{Arg, App, SubCommand};
 
+extern crate iron;
+use iron::prelude::*;
+use iron::status;
+
+extern crate time;
+
 fn main() {
     let matches = App::new("mockapi")
         .version("0.1")
@@ -13,7 +19,7 @@ fn main() {
         .subcommand(SubCommand::with_name("start")
             .about("Start server")
             .arg_from_usage(
-                "-p --port=[PORT_NUMBER] 'Set the port number'"
+                "-p [PORT_NUMBER] --port=[PORT_NUMBER] 'Set the port number'"
             )
         )
         .subcommand(SubCommand::with_name("stop")
@@ -25,7 +31,7 @@ fn main() {
         .subcommand(SubCommand::with_name("restart")
             .about("Restarts server")
             .args_from_usage(
-                "-p --port=[PORT_NUMBER] 'Set the port number'"
+                "-p [PORT_NUMBER] --port=[PORT_NUMBER] 'Set the port number'"
             )
         )
         .subcommand(SubCommand::with_name("delete")
@@ -40,14 +46,14 @@ fn main() {
         .subcommand(SubCommand::with_name("new")
             .about("Creates a new response for a server")
             .args_from_usage(
-                "-t --type 'Sets the type, GET or POST (defualt is GET)'
+                "-t [TYPE] --type=[TYPE] 'Sets the type, GET or POST (defualt is GET)'
                  <response_name> 'Response Name'"
             )
         )
         .subcommand(SubCommand::with_name("edit")
             .about("Edits a server response")
             .args_from_usage(
-                "--editor 'Sets the editor to edit the response (default is nano)'
+                "-e [EDITOR] --editor=[EDITOR] 'Sets the editor to edit the response (default is nano)'
                  <response_name> 'Name of response to edit"
             )
         )
@@ -58,6 +64,9 @@ fn main() {
 
         if matches.is_present("start") {
             println!("Starting server");
+            Iron::new(|_: &mut Request| {
+                Ok(Response::with((status::Ok, "Hello There")))
+            }).http("localhost:4242").unwrap();
         } else if matches.is_present("stop") {
             println!("Stopping server");
         } else if matches.is_present("restart") {

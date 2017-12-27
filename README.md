@@ -25,9 +25,6 @@ Or for help run:
 
 	$ mockapi-cli help
 
-### Sub-Commands:
-
-
 ### Sample Usage:
 To create a sever:
 
