@@ -1,18 +1,15 @@
 extern crate clap;
-use clap::{App, SubCommand};
-
 extern crate iron;
+extern crate chrono;
+extern crate router;
+extern crate rustc_serialize;
+
+use clap::{App, SubCommand};
 use iron::prelude::*;
 use iron::status;
 use iron::mime::Mime;
-
-extern crate chrono;
 use chrono::prelude::*;
-
-extern crate router;
 use router::Router;
-
-extern crate rustc_serialize;
 use rustc_serialize::json;
 
 #[derive(RustcEncodable, RustcDecodable)]
@@ -20,10 +17,10 @@ struct JsonResponse {
     response: String
 }
 
-fn handler(req: &mut Request) -> IronResult<Response> {
+fn handler(_: &mut Request) -> IronResult<Response> {
 
     let dt = Local::now();
-    println!("Receieved request at: {}:{}:{}", dt.hour(), dt.minute(), dt.second());
+    println!("Receieved request at: {}", dt.to_string());
 
     let response = JsonResponse { response: "Hello there, General Kenobi".to_string()};
     let out = json::encode(&response).unwrap();
@@ -87,10 +84,14 @@ fn main() {
         println!("Using server: {}", servername);
 
         if matches.is_present("start") {
-            println!("Starting server");
+
             let mut router = Router::new();
             router.get("/", handler, "index");
 
+            //TODO: Here create more routes dynamically from server settings
+            //Some sort of structure must hold the responses.
+
+            println!("Starting server");
             Iron::new(router).http("localhost:4848").unwrap();
 
         } else if matches.is_present("stop") {
