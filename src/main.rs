@@ -1,11 +1,35 @@
 extern crate clap;
-use clap::{Arg, App, SubCommand};
+use clap::{App, SubCommand};
 
 extern crate iron;
 use iron::prelude::*;
 use iron::status;
+use iron::mime::Mime;
 
-extern crate time;
+extern crate chrono;
+use chrono::prelude::*;
+
+extern crate router;
+use router::Router;
+
+extern crate rustc_serialize;
+use rustc_serialize::json;
+
+#[derive(RustcEncodable, RustcDecodable)]
+struct JsonResponse {
+    response: String
+}
+
+fn handler(req: &mut Request) -> IronResult<Response> {
+
+    let dt = Local::now();
+    println!("Receieved request at: {}:{}:{}", dt.hour(), dt.minute(), dt.second());
+
+    let response = JsonResponse { response: "Hello there, General Kenobi".to_string()};
+    let out = json::encode(&response).unwrap();
+    let content_type = "application/json".parse::<Mime>().unwrap();
+    Ok(Response::with((content_type, status::Ok, out)))
+}
 
 fn main() {
     let matches = App::new("mockapi")
@@ -64,9 +88,11 @@ fn main() {
 
         if matches.is_present("start") {
             println!("Starting server");
-            Iron::new(|_: &mut Request| {
-                Ok(Response::with((status::Ok, "Hello There")))
-            }).http("localhost:4242").unwrap();
+            let mut router = Router::new();
+            router.get("/", handler, "index");
+
+            Iron::new(router).http("localhost:4848").unwrap();
+
         } else if matches.is_present("stop") {
             println!("Stopping server");
         } else if matches.is_present("restart") {
