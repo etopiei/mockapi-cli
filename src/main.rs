@@ -8,24 +8,40 @@ use clap::{App, SubCommand};
 use iron::prelude::*;
 use iron::status;
 use iron::mime::Mime;
+use iron::{Response, Request, IronResult};
 use chrono::prelude::*;
 use router::Router;
 use rustc_serialize::json;
+use std::io::Write;
+use std::fs::File;
+use std::fs;
+use std::env;
+use std::error::Error;
+use std::path::Path;
 
 #[derive(RustcEncodable, RustcDecodable)]
 struct JsonResponse {
     response: String
 }
 
-fn handler(_: &mut Request) -> IronResult<Response> {
+fn handler(req: &mut Request) -> IronResult<Response> {
 
     let dt = Local::now();
-    println!("Receieved request at: {}", dt.to_string());
+    println!("Received request: {} at: {}",  req.url, dt.to_string());
+
+    //TODO: 3. Take the URL and match it with response name, then return relevant data
 
     let response = JsonResponse { response: "Hello there, General Kenobi".to_string()};
     let out = json::encode(&response).unwrap();
     let content_type = "application/json".parse::<Mime>().unwrap();
     Ok(Response::with((content_type, status::Ok, out)))
+}
+
+fn get_list_of_routes(server_name: &str) -> Vec<String> {
+    let a = vec!["".to_string()];
+    //TODO: 2. Use directory of serverName, if it exists to find response names
+
+    return a;
 }
 
 fn main() {
@@ -40,18 +56,6 @@ fn main() {
         .subcommand(SubCommand::with_name("start")
             .about("Start server")
             .arg_from_usage(
-                "-p [PORT_NUMBER] --port=[PORT_NUMBER] 'Set the port number'"
-            )
-        )
-        .subcommand(SubCommand::with_name("stop")
-            .about("Stop server")
-            .arg_from_usage(
-                "-f 'Force server to stop'"
-            )
-        )
-        .subcommand(SubCommand::with_name("restart")
-            .about("Restarts server")
-            .args_from_usage(
                 "-p [PORT_NUMBER] --port=[PORT_NUMBER] 'Set the port number'"
             )
         )
@@ -81,27 +85,44 @@ fn main() {
         .get_matches();
 
         let servername = matches.value_of("servername").unwrap();
-        println!("Using server: {}", servername);
 
         if matches.is_present("start") {
 
             let mut router = Router::new();
-            router.get("/", handler, "index");
-
-            //TODO: Here create more routes dynamically from server settings
-            //Some sort of structure must hold the responses.
+            let routes = get_list_of_routes(servername);
+            for route in routes {
+                router.get("/".to_string() + &route, handler, route);
+            }
 
             println!("Starting server");
             Iron::new(router).http("localhost:4848").unwrap();
 
-        } else if matches.is_present("stop") {
-            println!("Stopping server");
-        } else if matches.is_present("restart") {
-            println!("Restarting server");
         } else if matches.is_present("delete") {
             println!("Deleting Response");
         } else if matches.is_present("create") {
+
             println!("Creating server");
+
+            match fs::create_dir_all(env::var("HOME").unwrap() + "/mockapi-servers/" + servername) {
+                Err(why) => println!("Server directory already created."),
+                Ok(_) => println!("Directory created"),
+            }
+
+            let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/server.conf";
+
+            let path = Path::new(&pathname);
+            let display = path.display();
+
+            let mut file = match File::create(&path) {
+                Err(why) => panic!("Couldn't create {}: {}", display, why.description()),
+                Ok(file) => file,
+            };
+
+            match file.write_all("4848".as_bytes()) {
+                Err(why) => panic!("couldn't write to {}: {}", display, why.description()),
+                Ok(_) => println!("successfully wrote to {}", display),
+            }
+
         } else if matches.is_present("new") {
             println!("New response")
         } else if matches.is_present("edit") {
