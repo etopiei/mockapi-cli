@@ -13,6 +13,7 @@ use chrono::prelude::*;
 use router::Router;
 use rustc_serialize::json;
 use std::io::Write;
+use std::io::prelude::*;
 use std::fs::File;
 use std::fs;
 use std::env;
@@ -38,8 +39,32 @@ fn handler(req: &mut Request) -> IronResult<Response> {
 }
 
 fn get_list_of_routes(server_name: &str) -> Vec<String> {
-    let a = vec!["".to_string()];
-    //TODO: 2. Use directory of serverName, if it exists to find response names
+    let mut a = vec!["".to_string()];
+
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + server_name + "/server.conf";
+    let path = Path::new(&pathname);
+    let display = path.display();
+
+    let mut file = match File::open(&path) {
+        Err(why) => panic!("Couldn't open {}: {}", display, why.description()),
+        Ok(file) => file,
+    };
+
+    let mut file_contents = String::new();
+    match file.read_to_string(&mut file_contents) {
+        Err(why) => panic!("Couldn't read {}: {}", display, why.description()),
+        Ok(_) => (),
+    }
+
+    let mut test = false; //this is to skip the port in the config file.
+    let mut split = file_contents.split("\n");
+    for s in split {
+        if test == false {
+            test = true;
+        } else {
+            a.push(s.to_string());
+        }
+    }
 
     return a;
 }
@@ -95,6 +120,7 @@ fn main() {
             }
 
             println!("Starting server");
+            //TODO: Get the port from the config file
             Iron::new(router).http("localhost:4848").unwrap();
 
         } else if matches.is_present("delete") {
