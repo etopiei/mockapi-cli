@@ -25,6 +25,16 @@ struct JsonResponse {
     response: String
 }
 
+struct Server {
+    name: String,
+}
+
+impl Server {
+    pub fn new<'a>(server_name: &'a str) -> Server {
+        Server { name: server_name.to_string()}
+    }
+}
+
 fn handler(req: &mut Request) -> IronResult<Response> {
 
     let dt = Local::now();
@@ -70,6 +80,7 @@ fn get_list_of_routes(server_name: &str) -> Vec<String> {
 }
 
 fn main() {
+
     let matches = App::new("mockapi")
         .version("0.1")
         .author("etopiei lj343@icloud.com")
@@ -85,36 +96,38 @@ fn main() {
             )
         )
         .subcommand(SubCommand::with_name("delete")
-            .about("Deletes a response")
+            .about("Deletes a route")
             .args_from_usage(
-                "<response_name> 'Name of response to be deleted'"
+                "<route_name> 'Name of route to be deleted'"
             )
         )
         .subcommand(SubCommand::with_name("create")
             .about("Creates a new server")
         )
         .subcommand(SubCommand::with_name("new")
-            .about("Creates a new response for a server")
+            .about("Creates a new route for a server")
             .args_from_usage(
                 "-t [TYPE] --type=[TYPE] 'Sets the type, GET or POST (defualt is GET)'
-                 <response_name> 'Response Name'"
+                 <route_name> 'Route Name'"
             )
         )
         .subcommand(SubCommand::with_name("edit")
             .about("Edits a server response")
             .args_from_usage(
                 "-e [EDITOR] --editor=[EDITOR] 'Sets the editor to edit the response (default is nano)'
-                 <response_name> 'Name of response to edit"
+                 <route_name> 'Name of route to edit"
             )
         )
         .get_matches();
 
         let servername = matches.value_of("servername").unwrap();
+        let my_server = Server{ name: servername.to_string() };
 
         if matches.is_present("start") {
 
             let mut router = Router::new();
             let routes = get_list_of_routes(servername);
+
             for route in routes {
                 router.get("/".to_string() + &route, handler, route);
             }
@@ -130,7 +143,7 @@ fn main() {
             println!("Creating server");
 
             match fs::create_dir_all(env::var("HOME").unwrap() + "/mockapi-servers/" + servername) {
-                Err(why) => println!("Server directory already created."),
+                Err(why) => println!("Server directory already create: {}", why.description()),
                 Ok(_) => println!("Directory created"),
             }
 
