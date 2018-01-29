@@ -25,30 +25,7 @@ struct JsonResponse {
     response: String
 }
 
-struct Server {
-    name: String,
-}
-
-impl Server {
-    pub fn new<'a>(server_name: &'a str) -> Server {
-        Server { name: server_name.to_string()}
-    }
-}
-
-fn handler(req: &mut Request) -> IronResult<Response> {
-
-    let dt = Local::now();
-    println!("Received request: {} at: {}",  req.url, dt.to_string());
-
-    //TODO: 3. Take the URL and match it with response name, then return relevant data
-
-    let response = JsonResponse { response: "Hello there, General Kenobi".to_string()};
-    let out = json::encode(&response).unwrap();
-    let content_type = "application/json".parse::<Mime>().unwrap();
-    Ok(Response::with((content_type, status::Ok, out)))
-}
-
-fn get_list_of_routes(server_name: &str) -> Vec<String> {
+fn get_list_of_routes(server_name: &String) -> Vec<String> {
     let mut a = vec!["".to_string()];
 
     let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + server_name + "/server.conf";
@@ -67,7 +44,7 @@ fn get_list_of_routes(server_name: &str) -> Vec<String> {
     }
 
     let mut test = false; //this is to skip the port in the config file.
-    let mut split = file_contents.split("\n");
+    let split = file_contents.split("\n");
     for s in split {
         if test == false {
             test = true;
@@ -76,7 +53,26 @@ fn get_list_of_routes(server_name: &str) -> Vec<String> {
         }
     }
 
-    return a;
+    a
+}
+
+fn get_server_name() -> String {
+    //Read servername from file and write it out
+    let servername = "demo".to_string();
+    servername
+}
+
+fn handle(req: &mut Request) -> IronResult<Response> {
+        let dt = Local::now();
+        println!("Received request: {} at: {}",  req.url, dt.to_string());
+
+        //TODO: 3. Take the URL and match it with response name, then return relevant data
+        println!("Servername is: {}", get_server_name());
+
+        let response = JsonResponse { response: "Hello there, General Kenobi".to_string()};
+        let out = json::encode(&response).unwrap();
+        let content_type = "application/json".parse::<Mime>().unwrap();
+        Ok(Response::with((content_type, status::Ok, out)))
 }
 
 fn main() {
@@ -121,15 +117,14 @@ fn main() {
         .get_matches();
 
         let servername = matches.value_of("servername").unwrap();
-        let my_server = Server{ name: servername.to_string() };
 
         if matches.is_present("start") {
 
             let mut router = Router::new();
-            let routes = get_list_of_routes(servername);
+            let routes = get_list_of_routes(&servername.to_string());
 
             for route in routes {
-                router.get("/".to_string() + &route, handler, route);
+                router.get("/".to_string() + &route, handle, route);
             }
 
             println!("Starting server");
@@ -167,5 +162,5 @@ fn main() {
         } else if matches.is_present("edit") {
             println!("Editing file");
         }
-    
+
 }
