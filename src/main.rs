@@ -32,6 +32,10 @@ fn get_list_of_routes(server_name: &String) -> Vec<String> {
     let path = Path::new(&pathname);
     let display = path.display();
 
+    if ! Path::new(&path).exists() {
+        return a;
+    }
+
     let mut file = match File::open(&path) {
         Err(why) => panic!("Couldn't open {}: {}", display, why.description()),
         Ok(file) => file,
@@ -57,9 +61,42 @@ fn get_list_of_routes(server_name: &String) -> Vec<String> {
 }
 
 fn get_server_name() -> String {
-    //Read servername from file and write it out
-    let servername = "demo".to_string();
+    //Read servername from file
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/current-server.txt";
+    let path = Path::new(&pathname);
+    let display = path.display();
+
+    let mut file = match File::open(&path) {
+        Err(why) => panic!("Couldn't open {}: {}", display, why.description()),
+        Ok(file) => file,
+    };
+
+    let mut file_contents = String::new();
+    match file.read_to_string(&mut file_contents) {
+        Err(why) => panic!("Couldn't read {}: {}", display, why.description()),
+        Ok(_) => (),
+    }
+
+    let servername = file_contents.to_string();
     servername
+}
+
+fn write_server_name(servername: &String) {
+
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/current-server.txt";
+
+    let path = Path::new(&pathname);
+    let display = path.display();
+
+    let mut file = match File::create(&path) {
+        Err(why) => panic!("Couldn't create {}: {}", display, why.description()),
+            Ok(file) => file,
+    };
+
+    match file.write_all(servername.as_bytes()) {
+        Err(why) => panic!("couldn't write to {}: {}", display, why.description()),
+        Ok(_) => println!("successfully wrote to {}", display),
+    }
 }
 
 fn handle(req: &mut Request) -> IronResult<Response> {
@@ -120,16 +157,24 @@ fn main() {
 
         if matches.is_present("start") {
 
+            write_server_name(&servername.to_string());
+
             let mut router = Router::new();
             let routes = get_list_of_routes(&servername.to_string());
 
-            for route in routes {
-                router.get("/".to_string() + &route, handle, route);
-            }
+            if routes.len() > 0 {
 
-            println!("Starting server");
-            //TODO: Get the port from the config file
-            Iron::new(router).http("localhost:4848").unwrap();
+                for route in routes {
+                    router.get("/".to_string() + &route, handle, route);
+                }
+
+                println!("Starting server");
+                //TODO: Get the port from the config file
+                Iron::new(router).http("localhost:4848").unwrap();
+
+            } else {
+                println!("No server data found. Ensure server exists and it has at least 1 response.");
+            } 
 
         } else if matches.is_present("delete") {
             println!("Deleting Response");
