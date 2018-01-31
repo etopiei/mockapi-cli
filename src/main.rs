@@ -28,7 +28,7 @@ struct JsonResponse {
 fn get_list_of_routes(server_name: &String) -> Vec<String> {
     let mut a = vec!["".to_string()];
 
-    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + server_name + "/server.conf";
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + server_name + "/.server-config";
     let path = Path::new(&pathname);
     let display = path.display();
 
@@ -60,9 +60,41 @@ fn get_list_of_routes(server_name: &String) -> Vec<String> {
     a
 }
 
+fn create_server(servername: &String) -> bool {
+
+    match fs::create_dir_all(env::var("HOME").unwrap() + "/mockapi-servers/" + servername) {
+        Err(why) => println!("Server directory already created: {}", why.description()),
+        Ok(_) => println!("Directory created"),
+    }
+
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/.server-config";
+
+    let path = Path::new(&pathname);
+    let display = path.display();
+
+    let mut file = match File::create(&path) {
+        Err(why) => panic!("Couldn't create {}: {}", display, why.description()),
+        Ok(file) => file,
+    };
+
+    match file.write_all("4848".as_bytes()) {
+        Err(why) => panic!("couldn't write to {}: {}", display, why.description()),
+        Ok(_) => println!("successfully wrote to {}", display),
+    }
+
+    true
+
+}
+
+fn get_query(query_url: &String) -> String {
+    let split = query_url.split("/");
+    let vec = split.collect::<Vec<&str>>();
+    vec[3].to_string()
+}
+
 fn get_server_name() -> String {
     //Read servername from file
-    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/current-server.txt";
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/.current-server";
     let path = Path::new(&pathname);
     let display = path.display();
 
@@ -83,7 +115,7 @@ fn get_server_name() -> String {
 
 fn write_server_name(servername: &String) {
 
-    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/current-server.txt";
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/.current-server";
 
     let path = Path::new(&pathname);
     let display = path.display();
@@ -94,8 +126,8 @@ fn write_server_name(servername: &String) {
     };
 
     match file.write_all(servername.as_bytes()) {
-        Err(why) => panic!("couldn't write to {}: {}", display, why.description()),
-        Ok(_) => println!("successfully wrote to {}", display),
+        Err(why) => panic!("Couldn't write to {}: {}", display, why.description()),
+        Ok(_) => println!("Updated current server: {}", display),
     }
 }
 
@@ -103,8 +135,13 @@ fn handle(req: &mut Request) -> IronResult<Response> {
         let dt = Local::now();
         println!("Received request: {} at: {}",  req.url, dt.to_string());
 
-        //TODO: 3. Take the URL and match it with response name, then return relevant data
-        println!("Servername is: {}", get_server_name());
+        let servername = get_server_name();
+        let query = get_query(&req.url.to_string());
+
+        //println!("Servername is: {} and query is: {}", servername, query);
+        
+        //TODO: Go to servername folder and find query response
+        //also get query type from .server-config
 
         let response = JsonResponse { response: "Hello there, General Kenobi".to_string()};
         let out = json::encode(&response).unwrap();
@@ -141,6 +178,7 @@ fn main() {
             .about("Creates a new route for a server")
             .args_from_usage(
                 "-t [TYPE] --type=[TYPE] 'Sets the type, GET or POST (defualt is GET)'
+                 -r [RESPONSE_TYPE] 'Sets the type of response, default is text/plain, application/json, text/csv and application/xml are also supported.'
                  <route_name> 'Route Name'"
             )
         )
@@ -162,7 +200,7 @@ fn main() {
             let mut router = Router::new();
             let routes = get_list_of_routes(&servername.to_string());
 
-            if routes.len() > 0 {
+            if routes.len() > 1 {
 
                 for route in routes {
                     router.get("/".to_string() + &route, handle, route);
@@ -181,25 +219,10 @@ fn main() {
         } else if matches.is_present("create") {
 
             println!("Creating server");
-
-            match fs::create_dir_all(env::var("HOME").unwrap() + "/mockapi-servers/" + servername) {
-                Err(why) => println!("Server directory already create: {}", why.description()),
-                Ok(_) => println!("Directory created"),
-            }
-
-            let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/server.conf";
-
-            let path = Path::new(&pathname);
-            let display = path.display();
-
-            let mut file = match File::create(&path) {
-                Err(why) => panic!("Couldn't create {}: {}", display, why.description()),
-                Ok(file) => file,
-            };
-
-            match file.write_all("4848".as_bytes()) {
-                Err(why) => panic!("couldn't write to {}: {}", display, why.description()),
-                Ok(_) => println!("successfully wrote to {}", display),
+            if create_server(&servername.to_string()) {
+                println!("Server created succesfully.");
+            } else {
+                println!("Server creation failed.");
             }
 
         } else if matches.is_present("new") {
