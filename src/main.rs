@@ -151,6 +151,20 @@ fn get_query_type(query: &String, servername: &String) -> String {
     response_type.to_string()
 }
 
+fn create_response(routename: &String, request_type: &String, response_type: &String, servername: &String) -> bool {
+    //TODO: add the response to the server config file
+
+    //TODO: make a file for the response in the server folder
+
+    true
+}
+
+fn open_for_edit(editor: &String, route_name: &String, servername: &String) {
+
+    //TODO: open file with editor specified (may just use shell command, be careful that it is an editor though)
+
+}
+
 fn delete_response_from_server(response: &String, servername: &String) -> bool {
     //delete file with response
     match fs::remove_file(env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/" + &response) {
@@ -263,7 +277,7 @@ fn main() {
         .subcommand(SubCommand::with_name("edit")
             .about("Edits a server response")
             .args_from_usage(
-                "-e [EDITOR] --editor=[EDITOR] 'Sets the editor to edit the response (default is nano)'
+                "-e [EDITOR] --editor=[EDITOR] 'Sets the editor to edit the response (default is nano) vi and emacs also available.'
                  <route_name> 'Name of route to edit"
             )
         )
@@ -304,9 +318,37 @@ fn main() {
                 println!("Server creation failed.");
             }
         } else if matches.is_present("new") {
-            println!("New response")
+
+            let mut request_type = String::new();
+            let mut response_type = String::new();
+
+            if matches.is_present("TYPE") {
+                request_type.push_str(matches.value_of("TYPE").unwrap());
+            } else {
+                request_type.push_str("GET");
+            }
+
+            if matches.is_present("RESPONSE_TYPE") {
+                response_type.push_str(matches.value_of("RESPONSE_TYPE").unwrap());
+            } else {
+                response_type.push_str("text/plain");
+            }
+            let route_name = matches.value_of("route_name").unwrap();
+
+            create_response(&route_name.to_string(), &request_type, &response_type, &servername.to_string());
+
         } else if matches.is_present("edit") {
-            println!("Editing file");
+            let mut editor = String::new();
+
+            if matches.is_present("EDITOR") {
+                editor.push_str(matches.value_of("EDITOR").unwrap());
+            } else {
+                editor.push_str("nano");
+            }
+
+            let route_name = matches.value_of("route_name").unwrap();
+
+            open_for_edit(&editor, &route_name.to_string(), &servername.to_string())
         }
 
 }
