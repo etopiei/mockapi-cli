@@ -11,7 +11,7 @@ use iron::mime::Mime;
 use iron::{Response, Request, IronResult};
 use chrono::prelude::*;
 use router::Router;
-use rustc_serialize::json;
+//use rustc_serialize::json;
 use std::io::Write;
 use std::io::prelude::*;
 use std::fs::File;
@@ -25,16 +25,10 @@ struct JsonResponse {
     response: String
 }
 
-fn get_list_of_routes(server_name: &String) -> Vec<String> {
-    let mut a = vec!["".to_string()];
+fn read_file(pathname: &String) -> String {
 
-    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + server_name + "/.server-config";
     let path = Path::new(&pathname);
     let display = path.display();
-
-    if ! Path::new(&path).exists() {
-        return a;
-    }
 
     let mut file = match File::open(&path) {
         Err(why) => panic!("Couldn't open {}: {}", display, why.description()),
@@ -47,6 +41,14 @@ fn get_list_of_routes(server_name: &String) -> Vec<String> {
         Ok(_) => (),
     }
 
+    file_contents
+}
+
+fn get_list_of_routes(server_name: &String) -> Vec<String> {
+    let mut a = vec!["".to_string()];
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + server_name + "/.server-config";
+    let file_contents = read_file(&pathname);
+
     let mut test = false; //this is to skip the port in the config file.
     let split = file_contents.split("\n");
     for s in split {
@@ -58,6 +60,12 @@ fn get_list_of_routes(server_name: &String) -> Vec<String> {
     }
 
     a
+}
+
+fn get_route_name(route_full: &String) -> String {
+    let split = route_full.split(":");
+    let vec = split.collect::<Vec<&str>>();
+    vec[0].to_string()
 }
 
 fn create_server(servername: &String) -> bool {
@@ -83,6 +91,18 @@ fn create_server(servername: &String) -> bool {
     }
 
     true
+}
+
+fn get_port(servername: &String) -> String {
+    //read server config file to get port number
+
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/.server-config";
+    let file_contents = read_file(&pathname);
+
+    let split = file_contents.split("\n");
+    let vec = split.collect::<Vec<&str>>();
+    let port_number = vec[0];
+    port_number.to_string()
 
 }
 
@@ -92,22 +112,41 @@ fn get_query(query_url: &String) -> String {
     vec[3].to_string()
 }
 
+fn get_query_type(query: &String, servername: &String) -> String {
+    //read file and return mime type of response
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/.server-config";
+    let file_contents = read_file(&pathname);
+
+    let mut response_type = "";
+    let split = file_contents.split("\n");
+    let mut test = true;
+    for s in split {
+        if test {
+            test = false;
+        } else {
+            if s.contains(query) {
+                let details = s.split(":");
+                let parts = details.collect::<Vec<&str>>();
+                response_type = parts[1];
+            }
+        }
+    }
+
+    response_type.to_string()
+}
+
+fn get_response_data(query: &String, servername: &String) -> String {
+    //read from response file data as a string
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/" + query;
+    let file_contents = read_file(&pathname);
+
+    file_contents
+}
+
 fn get_server_name() -> String {
     //Read servername from file
     let pathname = env::var("HOME").unwrap() + "/mockapi-servers/.current-server";
-    let path = Path::new(&pathname);
-    let display = path.display();
-
-    let mut file = match File::open(&path) {
-        Err(why) => panic!("Couldn't open {}: {}", display, why.description()),
-        Ok(file) => file,
-    };
-
-    let mut file_contents = String::new();
-    match file.read_to_string(&mut file_contents) {
-        Err(why) => panic!("Couldn't read {}: {}", display, why.description()),
-        Ok(_) => (),
-    }
+    let file_contents = read_file(&pathname);
 
     let servername = file_contents.to_string();
     servername
@@ -138,15 +177,15 @@ fn handle(req: &mut Request) -> IronResult<Response> {
         let servername = get_server_name();
         let query = get_query(&req.url.to_string());
 
-        //println!("Servername is: {} and query is: {}", servername, query);
-        
-        //TODO: Go to servername folder and find query response
-        //also get query type from .server-config
-
-        let response = JsonResponse { response: "Hello there, General Kenobi".to_string()};
-        let out = json::encode(&response).unwrap();
-        let content_type = "application/json".parse::<Mime>().unwrap();
-        Ok(Response::with((content_type, status::Ok, out)))
+        if query.capacity() > 0 {
+            let content_type = get_query_type(&query, &servername).parse::<Mime>().unwrap();
+            let out = get_response_data(&query, &servername);
+            Ok(Response::with((content_type, status::Ok, out)))
+        } else {
+            let content_type = "text/plain".to_string().parse::<Mime>().unwrap();
+            let out = "Testing Server";
+            Ok(Response::with((content_type, status::Ok, out)))
+        }  
 }
 
 fn main() {
@@ -203,12 +242,15 @@ fn main() {
             if routes.len() > 1 {
 
                 for route in routes {
-                    router.get("/".to_string() + &route, handle, route);
+                    let route_name = get_route_name(&route);
+                    router.get("/".to_string() + &route_name, handle, route_name);
                 }
+                
+                let port_number = get_port(&servername.to_string());
+                let host = String::from("localhost:");
+                Iron::new(router).http(host + &port_number).unwrap();
 
-                println!("Starting server");
-                //TODO: Get the port from the config file
-                Iron::new(router).http("localhost:4848").unwrap();
+                println!("Serving at: localhost:{}", &port_number);
 
             } else {
                 println!("No server data found. Ensure server exists and it has at least 1 response.");
