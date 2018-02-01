@@ -44,6 +44,22 @@ fn read_file(pathname: &String) -> String {
     file_contents
 }
 
+fn write_string_to_file(content: &String, pathname: &String) {
+    //write contents of file to path passed.
+    let path = Path::new(&pathname);
+    let display = path.display();
+
+    let mut file = match File::create(&path) {
+        Err(why) => panic!("Couldn't create {}: {}", display, why.description()),
+        Ok(file) => file,
+    };
+
+    match file.write_all(content.as_bytes()) {
+        Err(why) => panic!("couldn't write to {}: {}", display, why.description()),
+        Ok(_) => println!("successfully wrote to {}", display),
+    }
+}
+
 fn get_list_of_routes(server_name: &String) -> Vec<String> {
     let mut a = vec!["".to_string()];
     let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + server_name + "/.server-config";
@@ -133,6 +149,29 @@ fn get_query_type(query: &String, servername: &String) -> String {
     }
 
     response_type.to_string()
+}
+
+fn delete_response_from_server(response: &String, servername: &String) -> bool {
+    //delete file with response
+    match fs::remove_file(env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/" + &response) {
+            Err(why) => println!("Failed to delete response: {}. Because: {}", &response, why.description()),
+            Ok(_) => println!("Succesfully deleted response")
+    };
+
+    //delete response from server file
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/.server-config";
+    let file_contents = read_file(&pathname);
+
+    let mut new_contents = String::from("");
+    let split = file_contents.split("\n");
+    for s in split {
+        new_contents.push_str(s);
+        new_contents.push('\n');
+    }
+
+    write_string_to_file(&new_contents, &pathname);
+
+    true
 }
 
 fn get_response_data(query: &String, servername: &String) -> String {
@@ -245,7 +284,7 @@ fn main() {
                     let route_name = get_route_name(&route);
                     router.get("/".to_string() + &route_name, handle, route_name);
                 }
-                
+
                 let port_number = get_port(&servername.to_string());
                 let host = String::from("localhost:");
                 Iron::new(router).http(host + &port_number).unwrap();
@@ -255,18 +294,15 @@ fn main() {
             } else {
                 println!("No server data found. Ensure server exists and it has at least 1 response.");
             } 
-
         } else if matches.is_present("delete") {
-            println!("Deleting Response");
+            let response = matches.value_of("route_name").unwrap();
+            delete_response_from_server(&response.to_string(), &servername.to_string());
         } else if matches.is_present("create") {
-
-            println!("Creating server");
             if create_server(&servername.to_string()) {
                 println!("Server created succesfully.");
             } else {
                 println!("Server creation failed.");
             }
-
         } else if matches.is_present("new") {
             println!("New response")
         } else if matches.is_present("edit") {
