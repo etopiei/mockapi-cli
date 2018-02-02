@@ -25,23 +25,27 @@ Or for help run:
 
 	$ mockapi-cli help
 
+Or for help with a particular command run:
+
+	$ mockapi-cli [command] --help
+
 ### Sample Usage:
 To create a sever:
 
-	mockapi-cli demo create
+	mockapi-cli create demo
 
 Then add new data:
 
-	mockapi-cli demo new testResponse --type=GET
-	mockapi-cli demo new testResponse2 --type=POST
+	mockapi-cli new demo --type=GET -r application/json testResponse
+	mockapi-cli new demo -t POST testResponse2
 
 Edit the data:
 
-	mockapi-cli demo edit testResponse2 --editor=vi
+	mockapi-cli edit demo testResponse2 --editor=vi
 
 Then start the server:
 
-	mockapi-cli demo start --port=8000
+	mockapi-cli start demo
 
 Then it can be queried through the following:
 

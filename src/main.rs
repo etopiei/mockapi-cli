@@ -4,7 +4,7 @@ extern crate chrono;
 extern crate router;
 extern crate rustc_serialize;
 
-use clap::{App, SubCommand};
+use clap::{App, SubCommand, Arg};
 use iron::prelude::*;
 use iron::status;
 use iron::mime::Mime;
@@ -15,10 +15,12 @@ use router::Router;
 use std::io::Write;
 use std::io::prelude::*;
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::fs;
 use std::env;
 use std::error::Error;
 use std::path::Path;
+use std::process::Command;
 
 #[derive(RustcEncodable, RustcDecodable)]
 struct JsonResponse {
@@ -122,6 +124,10 @@ fn get_port(servername: &String) -> String {
 
 }
 
+fn set_port(servername: &String, port: &String) {
+    //TODO: Open the server config and change the port number
+}
+
 fn get_query(query_url: &String) -> String {
     let split = query_url.split("/");
     let vec = split.collect::<Vec<&str>>();
@@ -152,17 +158,39 @@ fn get_query_type(query: &String, servername: &String) -> String {
 }
 
 fn create_response(routename: &String, request_type: &String, response_type: &String, servername: &String) -> bool {
-    //TODO: add the response to the server config file
+    
+    let content_to_write = "\n".to_string() + routename + ":" + response_type + ":" + request_type;
 
-    //TODO: make a file for the response in the server folder
+    let path = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/.server-config";
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(path)
+        .unwrap();
 
+    if let Err(e) = file.write_all(content_to_write.as_bytes()) {
+        eprintln!("Failed to add new response: {}", e);
+    }
+    
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/" + routename;
+    let text = "[Dummy new response text]";
+    write_string_to_file(&text.to_string(), &pathname);
     true
 }
 
 fn open_for_edit(editor: &String, route_name: &String, servername: &String) {
-
-    //TODO: open file with editor specified (may just use shell command, be careful that it is an editor though)
-
+    let mut using_editor = String::new();
+    let file_path = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/" + route_name;
+    if editor == "vi" || editor == "nano" || editor == "emacs" {
+        using_editor.push_str(editor);
+        Command::new("sh")
+            .arg(using_editor)
+            .arg(file_path)
+            .output()
+            .expect("Failed to execute process");
+    } else {
+        println!("Editor {} is not supported.", editor);
+    }
 }
 
 fn delete_response_from_server(response: &String, servername: &String) -> bool {
@@ -179,8 +207,10 @@ fn delete_response_from_server(response: &String, servername: &String) -> bool {
     let mut new_contents = String::from("");
     let split = file_contents.split("\n");
     for s in split {
-        new_contents.push_str(s);
-        new_contents.push('\n');
+        if ! s.contains(response) {
+            new_contents.push_str(s);
+            new_contents.push('\n');
+        }
     }
 
     write_string_to_file(&new_contents, &pathname);
@@ -248,107 +278,151 @@ fn main() {
         .author("etopiei lj343@icloud.com")
         .about("Creates API for testing from command line")
         .args_from_usage(
-            "-h, --help 'Show help message'
-            <servername> 'Current server'"
+            "-h, --help 'Show help message'"
         )
         .subcommand(SubCommand::with_name("start")
             .about("Start server")
-            .arg_from_usage(
-                "-p [PORT_NUMBER] --port=[PORT_NUMBER] 'Set the port number'"
-            )
+            .arg(Arg::with_name("port")
+                .short("p")
+                .long("port")
+                .value_name("port")
+                .help("Sets port of server"))
+            .arg(Arg::with_name("servername")
+                .help("The servername to start")
+                .required(true)
+                .value_name("servername")
+                .index(1))
         )
         .subcommand(SubCommand::with_name("delete")
             .about("Deletes a route")
             .args_from_usage(
-                "<route_name> 'Name of route to be deleted'"
+                "<servername> 'The server to delete response from'
+                <route_name> 'Name of route to be deleted'"
             )
         )
         .subcommand(SubCommand::with_name("create")
             .about("Creates a new server")
+            .args_from_usage(
+                "<servername> 'The name of the server to create'"
+            )
         )
         .subcommand(SubCommand::with_name("new")
             .about("Creates a new route for a server")
             .args_from_usage(
-                "-t [TYPE] --type=[TYPE] 'Sets the type, GET or POST (defualt is GET)'
+                "<servername> 'The server to create a new route for'
+                 -t --type=[TYPE] 'Sets the type, GET or POST (defualt is GET)'
                  -r [RESPONSE_TYPE] 'Sets the type of response, default is text/plain, application/json, text/csv and application/xml are also supported.'
-                 <route_name> 'Route Name'"
+                 <routename> 'Route Name'"
             )
         )
         .subcommand(SubCommand::with_name("edit")
             .about("Edits a server response")
             .args_from_usage(
-                "-e [EDITOR] --editor=[EDITOR] 'Sets the editor to edit the response (default is nano) vi and emacs also available.'
-                 <route_name> 'Name of route to edit"
+                "<servername> 'Name of server of the response to edit'
+                 <route_name> 'Name of route to edit'
+                 -e [EDITOR] 'Sets the editor to edit the response (default is nano) vi and emacs also available.'"
             )
         )
         .get_matches();
 
-        let servername = matches.value_of("servername").unwrap();
+        let mut servername = String::new();
 
-        if matches.is_present("start") {
-
-            write_server_name(&servername.to_string());
-
-            let mut router = Router::new();
-            let routes = get_list_of_routes(&servername.to_string());
-
-            if routes.len() > 1 {
-
-                for route in routes {
-                    let route_name = get_route_name(&route);
-                    router.get("/".to_string() + &route_name, handle, route_name);
+        if let Some(matches) = matches.subcommand_matches("start") {
+            if matches.is_present("servername") {
+                servername.push_str(matches.value_of("servername").unwrap());
+     
+                if matches.is_present("port") {
+                    let port = matches.value_of("port").unwrap().to_string();
+                    set_port(&servername, &port);
                 }
 
-                let port_number = get_port(&servername.to_string());
-                let host = String::from("localhost:");
-                Iron::new(router).http(host + &port_number).unwrap();
+                write_server_name(&servername.to_string());
 
-                println!("Serving at: localhost:{}", &port_number);
+                let mut router = Router::new();
+                let routes = get_list_of_routes(&servername.to_string());
 
+                if routes.len() > 1 {
+
+                    for route in routes {
+                        let route_name = get_route_name(&route);
+                        router.get("/".to_string() + &route_name, handle, route_name);
+                    }
+
+                    let port_number = get_port(&servername.to_string());
+                    let host = String::from("localhost:");
+                    println!("Serving at: localhost:{}", &port_number);
+                    Iron::new(router).http(host + &port_number).unwrap();
+                } else {
+                    println!("No server data found. Ensure server exists and it has at least 1 response.");
+                } 
             } else {
-                println!("No server data found. Ensure server exists and it has at least 1 response.");
-            } 
-        } else if matches.is_present("delete") {
-            let response = matches.value_of("route_name").unwrap();
-            delete_response_from_server(&response.to_string(), &servername.to_string());
-        } else if matches.is_present("create") {
-            if create_server(&servername.to_string()) {
-                println!("Server created succesfully.");
-            } else {
-                println!("Server creation failed.");
+                panic!("Failed to set servername.");
             }
-        } else if matches.is_present("new") {
-
-            let mut request_type = String::new();
-            let mut response_type = String::new();
-
-            if matches.is_present("TYPE") {
-                request_type.push_str(matches.value_of("TYPE").unwrap());
+        } else if let Some(matches) = matches.subcommand_matches("delete") {
+            if matches.is_present("servername") {
+                servername.push_str(matches.value_of("servername").unwrap());
+                let response = matches.value_of("route_name").unwrap();
+                delete_response_from_server(&response.to_string(), &servername.to_string());
             } else {
-                request_type.push_str("GET");
+                panic!("Failed to set servername");
+            }
+        } else if let Some(matches) = matches.subcommand_matches("create") {
+            if matches.is_present("servername") {
+                servername.push_str(matches.value_of("servername").unwrap());
+                if create_server(&servername.to_string()) {
+                    println!("Server created succesfully.");
+                } else {
+                    println!("Server creation failed.");
+                }
+            } else {
+                panic!("Failed to set servername");
+            }
+        } else if let Some(matches) = matches.subcommand_matches("new") {
+
+            if matches.is_present("servername") {
+                servername.push_str(matches.value_of("servername").unwrap());
+
+                let mut request_type = String::new();
+                let mut response_type = String::new();
+
+                if matches.is_present("TYPE") {
+                    request_type.push_str(matches.value_of("TYPE").unwrap());
+                } else {
+                    request_type.push_str("GET");
+                }
+
+                if matches.is_present("RESPONSE_TYPE") {
+                    response_type.push_str(matches.value_of("RESPONSE_TYPE").unwrap());
+                } else {
+                    response_type.push_str("text/plain");
+                }
+
+                if matches.is_present("routename") {
+                    let route_name = matches.value_of("routename").unwrap();
+                    create_response(&route_name.to_string(), &request_type, &response_type, &servername.to_string());
+                } else {
+                    println!("Failed to get route name.");
+                }
+            } else {
+                panic!("Failed to set servername");
             }
 
-            if matches.is_present("RESPONSE_TYPE") {
-                response_type.push_str(matches.value_of("RESPONSE_TYPE").unwrap());
+        } else if let Some(matches) = matches.subcommand_matches("edit") {
+            if matches.is_present("servername") {
+                servername.push_str(matches.value_of("servername").unwrap());
+                let mut editor = String::new();
+
+                if matches.is_present("EDITOR") {
+                    editor.push_str(matches.value_of("EDITOR").unwrap());
+                } else {
+                    editor.push_str("nano");
+                }
+
+                let route_name = matches.value_of("route_name").unwrap();
+
+                open_for_edit(&editor, &route_name.to_string(), &servername.to_string())
             } else {
-                response_type.push_str("text/plain");
+                panic!("Failed to set servername");
             }
-            let route_name = matches.value_of("route_name").unwrap();
-
-            create_response(&route_name.to_string(), &request_type, &response_type, &servername.to_string());
-
-        } else if matches.is_present("edit") {
-            let mut editor = String::new();
-
-            if matches.is_present("EDITOR") {
-                editor.push_str(matches.value_of("EDITOR").unwrap());
-            } else {
-                editor.push_str("nano");
-            }
-
-            let route_name = matches.value_of("route_name").unwrap();
-
-            open_for_edit(&editor, &route_name.to_string(), &servername.to_string())
         }
-
 }
