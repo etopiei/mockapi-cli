@@ -125,7 +125,20 @@ fn get_port(servername: &String) -> String {
 }
 
 fn set_port(servername: &String, port: &String) {
-    //TODO: Open the server config and change the port number
+    //Open the server config and change the port number
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/.server-config";
+    let file_contents = read_file(&pathname);
+
+    let split = file_contents.split("\n");
+    let vec = split.collect::<Vec<&str>>();
+    vec[0] = port;
+
+    let mut new_string = String::new();
+    for s in vec {
+        new_string.push_str(s + "/n");
+    }
+
+    write_string_to_file(new_string, pathname);
 }
 
 fn get_query(query_url: &String) -> String {
@@ -186,7 +199,7 @@ fn open_for_edit(editor: &String, route_name: &String, servername: &String) {
         Command::new("sh")
             .arg(using_editor)
             .arg(file_path)
-            .output()
+            .spawn()
             .expect("Failed to execute process");
     } else {
         println!("Editor {} is not supported.", editor);
