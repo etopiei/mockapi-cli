@@ -13,7 +13,6 @@ use iron::mime::Mime;
 use iron::{Response, Request, IronResult};
 use chrono::prelude::*;
 use router::Router;
-//use rustc_serialize::json;
 use std::io::prelude::*;
 use std::fs::File;
 use std::io::{Write, BufWriter};
@@ -247,6 +246,15 @@ fn get_response_data(query: &String, servername: &String) -> String {
     file_contents
 }
 
+fn list_responses(servername: &String, response_type: &String) {
+    //go through responses for given server in .server-config file
+    //ensure it matches type requirements
+}
+
+fn list_servers() {
+    //search for folders in the server directory
+}
+
 fn get_server_name() -> String {
     //Read servername from file
     let pathname = env::var("HOME").unwrap() + "/mockapi-servers/.current-server";
@@ -410,6 +418,23 @@ fn main() {
 
         } else {
             panic!("Failed to set servername");
+        }
+    } else if let Some(matches) = matches.subcommand_matches("list") {
+
+        let mut response_type = String::new();
+        let mut servername;
+
+        if matches.is_present("type") {
+            response_type = matches.value_of("type").unwrap().to_string();
+        }
+
+        if matches.is_present("servername") {
+            //list responses from the given server
+            servername = matches.value_of("servername").unwrap().to_string();
+            list_responses(&servername, &response_type);
+        } else {
+            //list all servers
+            list_servers();
         }
     }
 }

@@ -63,3 +63,14 @@ subcommands:
             - routename: 
                 help: The name of the response to edit
                 required: true
+    - list:
+        about: Lists servers or responses available to app (If no server is provided this will list servers)
+        args:
+            - servername:
+                short: s
+                long: servername
+                help: The name of the servername to list responses of
+            - type:
+                short: t
+                long: type
+                help: List only the specified type of response (This can be GET, POST or any MIME type)
