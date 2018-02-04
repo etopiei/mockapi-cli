@@ -370,8 +370,15 @@ fn main() {
             }
 
             if matches.is_present("routename") {
-                let route_name = matches.value_of("routename").unwrap();
-                create_response(&route_name.to_string(), &request_type, &response_type, &servername.to_string());
+                let mut route_name = matches.value_of("routename").unwrap();
+                while route_name.len() > 0 && &route_name[0..1] == "/" {
+                    route_name = &route_name[1..];
+                }
+                if route_name.len() > 0 {
+                    create_response(&route_name.to_string(), &request_type, &response_type, &servername.to_string());
+                } else {
+                    println!("Failed to get route name.");
+                }
             } else {
                 println!("Failed to get route name.");
             }
