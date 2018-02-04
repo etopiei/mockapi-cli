@@ -19,11 +19,11 @@ Then from /target/debug run:
 	$ ./mockapi-cli ...
 
 Run it from command line with:
-	$ mockapi-cli <servername> \[subcommand]
+	$ mockapi-cli \[subcommand] <servername>
 
 Or for help run:
 
-	$ mockapi-cli help
+	$ mockapi-cli --help
 
 Or for help with a particular command run:
 
@@ -36,12 +36,12 @@ To create a sever:
 
 Then add new data:
 
-	mockapi-cli new demo --type=GET -r application/json testResponse
-	mockapi-cli new demo -t POST testResponse2
+	mockapi-cli new --type=GET -r application/json demo testResponse
+	mockapi-cli new -t POST demo testResponse2
 
 Edit the data:
 
-	mockapi-cli edit demo testResponse2 --editor=vi
+	mockapi-cli edit --editor=vi demo testResponse2 
 
 Then start the server:
 
