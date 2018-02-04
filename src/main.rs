@@ -5,7 +5,7 @@ extern crate chrono;
 extern crate router;
 extern crate rustc_serialize;
 
-use clap::{App, SubCommand, Arg};
+use clap::App;
 use iron::prelude::*;
 use iron::status;
 use iron::mime::Mime;
@@ -13,9 +13,9 @@ use iron::{Response, Request, IronResult};
 use chrono::prelude::*;
 use router::Router;
 //use rustc_serialize::json;
-use std::io::Write;
 use std::io::prelude::*;
 use std::fs::File;
+use std::io::{Write, BufWriter};
 use std::fs::OpenOptions;
 use std::fs;
 use std::env;
@@ -50,16 +50,15 @@ fn read_file(pathname: &String) -> String {
 fn write_string_to_file(content: &String, pathname: &String) {
     //write contents of file to path passed.
     let path = Path::new(&pathname);
-    let display = path.display();
 
-    let mut file = match File::create(&path) {
-        Err(why) => panic!("Couldn't create {}: {}", display, why.description()),
-        Ok(file) => file,
-    };
+    let f = File::create(&path).expect("Unable to create file");
+    let mut f = BufWriter::new(f);
 
-    match file.write_all(content.as_bytes()) {
-        Err(why) => panic!("couldn't write to {}: {}", display, why.description()),
-        Ok(_) => println!("successfully wrote to {}", display),
+    let parts = content.split("\n");
+    for line in parts {
+        let mut add_line = String::from(line);
+        add_line.push('\n');
+        f.write(add_line.as_bytes()).expect("Unable to write data");
     }
 }
 
@@ -137,7 +136,7 @@ fn set_port(servername: &String, port: &String) {
     let mut new_string = String::new();
     for s in vec {
         new_string.push_str(s);
-        new_string.push_str("/n");
+        new_string.push_str("\n");
     }
 
     write_string_to_file(&new_string, &pathname);
@@ -289,8 +288,7 @@ fn handle(req: &mut Request) -> IronResult<Response> {
 fn main() {
 
     let yml = load_yaml!("app.yml");
-    let app = App::from_yaml(yml);
-    let matches = app.get_matches();
+    let matches = App::from_yaml(yml).get_matches();
 
     let mut servername = String::new();
 
