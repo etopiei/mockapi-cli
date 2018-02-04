@@ -4,6 +4,7 @@ extern crate iron;
 extern crate chrono;
 extern crate router;
 extern crate rustc_serialize;
+extern crate exec;
 
 use clap::App;
 use iron::prelude::*;
@@ -21,7 +22,6 @@ use std::fs;
 use std::env;
 use std::error::Error;
 use std::path::Path;
-use std::process::Command;
 
 #[derive(RustcEncodable, RustcDecodable)]
 struct JsonResponse {
@@ -196,12 +196,19 @@ fn open_for_edit(editor: &String, route_name: &String, servername: &String) {
     let mut using_editor = String::new();
     let file_path = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/" + route_name;
     if editor == "vi" || editor == "nano" || editor == "emacs" {
+
         using_editor.push_str(editor);
-        Command::new("sh")
-            .arg(using_editor)
-            .arg(file_path)
-            .spawn()
-            .expect("Failed to execute process");
+        let mut full_command = String::from(using_editor);
+        full_command.push(' ');
+        full_command.push_str(&file_path);
+
+        let err = exec::Command::new("sh")
+            .arg("-c")
+            .arg(full_command)
+            .exec();
+        
+        println!("Error: {}", err);
+
     } else {
         println!("Editor {} is not supported.", editor);
     }
@@ -377,15 +384,23 @@ fn main() {
             servername.push_str(matches.value_of("servername").unwrap());
             let mut editor = String::new();
 
-            if matches.is_present("EDITOR") {
-                editor.push_str(matches.value_of("EDITOR").unwrap());
+            if matches.is_present("editor") {
+                editor.push_str(matches.value_of("editor").unwrap());
             } else {
                 editor.push_str("nano");
             }
 
-            let route_name = matches.value_of("route_name").unwrap();
+            let mut route_name;
+
+            if matches.is_present("routename") {
+                route_name = matches.value_of("routename").unwrap();
+                //TODO: Check route exists
+            } else {
+                panic!("Failed to get routename");
+            }
 
             open_for_edit(&editor, &route_name.to_string(), &servername.to_string())
+
         } else {
             panic!("Failed to set servername");
         }
