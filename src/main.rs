@@ -19,6 +19,7 @@ use std::io::{Write, BufWriter};
 use std::fs::OpenOptions;
 use std::fs;
 use std::env;
+use std::fs::metadata;
 use std::error::Error;
 use std::path::Path;
 
@@ -246,13 +247,28 @@ fn get_response_data(query: &String, servername: &String) -> String {
     file_contents
 }
 
-fn list_responses(servername: &String, response_type: &String) {
+fn list_responses(_servername: &String, _response_type: &String) {
     //go through responses for given server in .server-config file
     //ensure it matches type requirements
 }
 
 fn list_servers() {
     //search for folders in the server directory
+    println!("Servers:");
+
+    let pathname = env::var("HOME").unwrap() + "/mockapi-servers/";
+    let paths = fs::read_dir(pathname).unwrap();
+
+    for path in paths {
+        let current_path = path.unwrap().path().display().to_string();
+        let md = metadata(&current_path).unwrap();
+        if md.is_dir() {
+            let v: Vec<&str> = current_path.split("/mockapi-servers/").collect();
+            if v.len() > 1 {
+                println!("{}", v[1]);
+            }
+        }
+    }
 }
 
 fn get_server_name() -> String {
