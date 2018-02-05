@@ -81,9 +81,14 @@ fn get_list_of_routes(server_name: &String) -> Vec<String> {
 }
 
 fn get_route_name(route_full: &String) -> String {
+    let vec = get_route_info(route_full);
+    vec[0].to_string()
+}
+
+fn get_route_info(route_full: &String) -> Vec<&str> {
     let split = route_full.split(":");
     let vec = split.collect::<Vec<&str>>();
-    vec[0].to_string()
+    vec
 }
 
 fn create_server(servername: &String) -> bool {
@@ -247,14 +252,48 @@ fn get_response_data(query: &String, servername: &String) -> String {
     file_contents
 }
 
-fn list_responses(_servername: &String, _response_type: &String) {
+fn list_responses(servername: &String, response_type: &String) {
     //go through responses for given server in .server-config file
-    //ensure it matches type requirements
+    println!("Responses: \n");
+
+    if response_type.len() > 1 {
+        //ensure it matches type requirements
+        let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/.server-config";
+        let contents = read_file(&pathname);
+        let v: Vec<&str> = contents.split("\n").collect();
+        let mut skip = true;
+        for line in v {
+            if skip {
+                skip = false;
+            } else {
+                let full_route = line.to_string();
+                let vec = get_route_info(&full_route);
+                if vec.len() > 1 {
+                    if vec[1] == response_type || vec[2] == response_type {
+                        println!("{}", vec[0]);
+                    }
+                }
+            }
+        }
+    } else {
+        //list all responses of servername
+        let pathname = env::var("HOME").unwrap() + "/mockapi-servers/" + servername + "/.server-config";
+        let contents = read_file(&pathname);
+        let v: Vec<&str> = contents.split("\n").collect();
+        let mut skip = true;
+        for line in v {
+            if skip {
+                skip = false;
+            } else {
+                println!("{}", get_route_name(&line.to_string()));
+            }
+        }
+    }
 }
 
 fn list_servers() {
     //search for folders in the server directory
-    println!("Servers:");
+    println!("Servers: \n");
 
     let pathname = env::var("HOME").unwrap() + "/mockapi-servers/";
     let paths = fs::read_dir(pathname).unwrap();

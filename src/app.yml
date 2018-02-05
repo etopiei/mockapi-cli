@@ -70,7 +70,9 @@ subcommands:
                 short: s
                 long: servername
                 help: The name of the servername to list responses of
+                takes_value: true
             - type:
                 short: t
                 long: type
                 help: List only the specified type of response (This can be GET, POST or any MIME type)
+                takes_value: true
