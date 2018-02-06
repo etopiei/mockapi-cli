@@ -1,6 +1,7 @@
 # Mock API - CLI
 
-[![Build Status] (https://travis-ci.org/etopiei/mockapi-cli.png)] (https://travis-ci.org/etopiei/mockapi-cli)
+![Build Status] (https://travis-ci.org/etopiei/mockapi-cli.png)
+https://travis-ci.org/etopiei/mockapi-cli
 
 This project was inspired by Mockoon, which is a really cool project.
 Check it out here: <https://mockoon.com>
