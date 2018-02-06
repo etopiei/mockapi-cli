@@ -1,5 +1,5 @@
 [package]
-name = "mockapi-cli"
+name = "mockapi"
 version = "0.0.1"
 authors = ["etopiei"]
 

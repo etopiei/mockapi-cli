@@ -493,3 +493,15 @@ fn main() {
         }
     }
 }
+
+//TESTS:
+
+#[test]
+fn test_getting_route_name() {
+    assert_eq!(get_route_name(&"testing:application/json:GET".to_string()), "testing");
+}
+
+#[test]
+fn test_getting_query() {
+    assert_eq!(get_query(&"http://localhost:8000/testing".to_string()), "testing");
+}
