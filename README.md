@@ -11,7 +11,7 @@ be cool to create a open source cli version.
 
 This app is perfect for hackathons or quickly creating a local testing environment for frontend development. It allows you to thoroughly test that the code will integrate with the backend all from your local workspace.
 
-### Building
+### Building for Development
 
 To build this project run:
 
@@ -19,36 +19,43 @@ To build this project run:
 
 Then from /target/debug run:
 
-	$ ./mockapi-cli ...
+	$ ./mockapi ...
+
+### Installing
+
+To install clone the repo and run:
+
+	$ chmod +x install.sh
+	$ ./install.sh
 
 Run it from command line with:
-	$ mockapi-cli \[subcommand] <servername>
+	$ mockapi \[subcommand] <servername>
 
 Or for help run:
 
-	$ mockapi-cli --help
+	$ mockapi --help
 
 Or for help with a particular command run:
 
-	$ mockapi-cli [command] --help
+	$ mockapi [command] --help
 
 ### Sample Usage:
 To create a sever:
 
-	mockapi-cli create demo
+	mockapi create demo
 
 Then add new data:
 
-	mockapi-cli new --type=GET -r application/json demo testResponse
-	mockapi-cli new -t POST demo testResponse2
+	mockapi new --type=GET -r application/json demo testResponse
+	mockapi new -t POST demo testResponse2
 
 Edit the data:
 
-	mockapi-cli edit --editor=vi demo testResponse2 
+	mockapi edit --editor=vi demo testResponse2 
 
 Then start the server:
 
-	mockapi-cli start demo
+	mockapi start demo
 
 Then it can be queried through the following:
 
